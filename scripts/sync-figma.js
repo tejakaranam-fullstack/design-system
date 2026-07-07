@@ -16,6 +16,16 @@ const response = await fetch(url, {
     }
 });
 
+if (response.status === 404) {
+    console.warn("Figma Variables API returned 404 — this endpoint requires a Figma Enterprise plan. Skipping sync.");
+    process.exit(0);
+}
+
+if (response.status === 403) {
+    console.warn("Figma Variables API returned 403 — check that FIGMA_TOKEN has the correct permissions. Skipping sync.");
+    process.exit(0);
+}
+
 if (!response.ok) {
     throw new Error(`Unable to fetch Figma variables: HTTP ${response.status} ${response.statusText}`);
 }
