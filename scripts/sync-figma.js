@@ -3,6 +3,11 @@ import fs from "fs";
 const token = process.env.FIGMA_TOKEN;
 const fileKey = process.env.FIGMA_FILE_KEY;
 
+if (!token || !fileKey) {
+    console.warn("FIGMA_TOKEN or FIGMA_FILE_KEY is not set. Skipping Figma sync.");
+    process.exit(0);
+}
+
 const url = `https://api.figma.com/v1/files/${fileKey}/variables/local`;
 
 const response = await fetch(url, {
@@ -12,7 +17,7 @@ const response = await fetch(url, {
 });
 
 if (!response.ok) {
-    throw new Error("Unable to fetch Figma variables");
+    throw new Error(`Unable to fetch Figma variables: HTTP ${response.status} ${response.statusText}`);
 }
 
 const variables = await response.json();
