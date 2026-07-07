@@ -1,32 +1,32 @@
-import fs from "fs";
+import fs from "node:fs";
 
 const token = process.env.FIGMA_TOKEN;
 const fileKey = process.env.FIGMA_FILE_KEY;
 
-if (!token || !fileKey) {
-    console.warn("FIGMA_TOKEN or FIGMA_FILE_KEY is not set. Skipping Figma sync.");
-    process.exit(0);
-}
+if (!token) throw new Error("Missing FIGMA_TOKEN");
+if (!fileKey) throw new Error("Missing FIGMA_FILE_KEY");
 
-const url = `https://api.figma.com/v1/files/${fileKey}/variables/local`;
+const url = `https://api.figma.com/v1/files/${fileKey}`;
 
 const response = await fetch(url, {
-    headers: {
-        "X-Figma-Token": token
-    }
+  headers: {
+    "X-Figma-Token": token
+  }
 });
 
 if (!response.ok) {
-    throw new Error(`Unable to fetch Figma variables: HTTP ${response.status} ${response.statusText}`);
+  const text = await response.text();
+  throw new Error(
+    `Unable to fetch Figma file: HTTP ${response.status}\n${text}`
+  );
 }
 
-const variables = await response.json();
+const data = await response.json();
 
 fs.mkdirSync("tokens", { recursive: true });
-
 fs.writeFileSync(
-    "tokens/variables.json",
-    JSON.stringify(variables, null, 2)
+  "tokens/file.json",
+  JSON.stringify(data, null, 2)
 );
 
-console.log("Variables synced.");
+console.log("File downloaded successfully.");
