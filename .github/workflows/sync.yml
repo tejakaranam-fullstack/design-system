@@ -41,18 +41,18 @@ jobs:
             echo "::error::Repository secret FIGMA_TOKEN is not set."
             exit 1
           fi
-          if [ -z "$FIGMA_FILE_ID" ]; then
-            echo "::error::Repository secret FIGMA_FILE_ID is not set."
+          if [ -z "$FIGMA_FILE_KEY" ]; then
+            echo "::error::Repository secret FIGMA_FILE_KEY is not set."
             exit 1
           fi
         env:
           FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
-          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+          FIGMA_FILE_KEY: ${{ secrets.FIGMA_FILE_KEY }}
 
       - name: Fetch Figma variables
         env:
           FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
-          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+          FIGMA_FILE_KEY: ${{ secrets.FIGMA_FILE_KEY }}
         run: npm run fetch
 
       - name: Transform to DTCG format

@@ -4,7 +4,7 @@
  *
  * Required environment variables:
  *   FIGMA_TOKEN   – Personal access token or OAuth token with file:read scope
- *   FIGMA_FILE_ID – The Figma file key (from the file URL: figma.com/design/<FILE_ID>/…)
+ *   FIGMA_FILE_KEY – The Figma file key (from the file URL: figma.com/design/<FILE_ID>/…)
  */
 
 import fs from 'fs';
@@ -14,21 +14,21 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
-const FIGMA_FILE_ID = process.env.FIGMA_FILE_ID;
+const FIGMA_FILE_KEY = process.env.FIGMA_FILE_KEY;
 
 if (!FIGMA_TOKEN) {
   console.error('Error: FIGMA_TOKEN environment variable is not set.');
   process.exit(1);
 }
-if (!FIGMA_FILE_ID) {
-  console.error('Error: FIGMA_FILE_ID environment variable is not set.');
+if (!FIGMA_FILE_KEY) {
+  console.error('Error: FIGMA_FILE_KEY environment variable is not set.');
   process.exit(1);
 }
 
 async function fetchFigmaVariables() {
-  const url = `https://api.figma.com/v1/files/${FIGMA_FILE_ID}/variables/local`;
+  const url = `https://api.figma.com/v1/files/${FIGMA_FILE_KEY}/variables/local`;
 
-  console.log(`Fetching variables from Figma file: ${FIGMA_FILE_ID}`);
+  console.log(`Fetching variables from Figma file: ${FIGMA_FILE_KEY}`);
 
   const response = await fetch(url, {
     headers: {
