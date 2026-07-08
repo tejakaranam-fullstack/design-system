@@ -17,8 +17,8 @@ jobs:
  
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-  
+          node-version: 20
+ 
       - run: npm install axios fs-extra
  
       - run: node scripts/fetch-figma-variables.js
