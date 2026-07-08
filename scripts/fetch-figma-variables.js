@@ -14,10 +14,10 @@ if (!FIGMA_API_TOKEN || !FIGMA_FILE_ID) {
  
 const headers = {
   "X-Figma-Token": FIGMA_API_TOKEN,
-}; 
+};
  
 const OUTPUT_DIR = "tokens";
-   
+ 
 const COLLECTIONS_TO_EXPORT = {
   GLOBAL: "global (primitive)",
   BRAND_PRIMITIVE: "brand (primitive) (WIP)",
