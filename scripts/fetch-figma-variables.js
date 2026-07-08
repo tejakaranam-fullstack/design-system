@@ -51,13 +51,8 @@ function mapType(type) {
   }
 }
  
-function colorToFigmaTokenValue(value) {
-  return {
-    colorSpace: "srgb",
-    components: [value.r, value.g, value.b],
-    alpha: value.a ?? 1,
-    hex: rgbToHex(value.r, value.g, value.b),
-  };
+function colorToHex(value) {
+  return rgbToHex(value.r, value.g, value.b);
 }
  
 function rgbToHex(r, g, b) {
@@ -170,72 +165,31 @@ function formatTokenValue(resolvedValue) {
     resolvedValue.g !== undefined &&
     resolvedValue.b !== undefined
   ) {
-    return colorToFigmaTokenValue(resolvedValue);
+    return colorToHex(resolvedValue);
   }
  
   return resolvedValue;
 }
  
-function createAliasData(rawValue, variableById, collectionById) {
-  if (!rawValue || rawValue.type !== "VARIABLE_ALIAS") {
-    return undefined;
-  }
- 
-  const targetVariable = variableById[rawValue.id];
- 
-  if (!targetVariable) {
-    return {
-      targetVariableId: rawValue.id,
-    };
-  }
- 
-  const targetCollection = collectionById[targetVariable.variableCollectionId];
- 
-  return {
-    targetVariableId: targetVariable.id,
-    targetVariableName: targetVariable.name,
-    targetVariableSetId: targetVariable.variableCollectionId,
-    targetVariableSetName: targetCollection?.name || "",
-  };
-}
- 
 function createToken(variable, rawValue, modeId, lookups) {
-  const resolvedValue =
-    rawValue?.type === "VARIABLE_ALIAS"
-      ? resolveAliasValue(rawValue, modeId, lookups.variableById)
-      : rawValue;
- 
-  const token = {
+  // If alias, use DTCG reference syntax {dot.path}
+  if (rawValue?.type === "VARIABLE_ALIAS") {
+    const targetVariable = lookups.variableById[rawValue.id];
+    if (targetVariable) {
+      const aliasPath = targetVariable.name.replaceAll("/", ".");
+      return {
+        $type: mapType(variable.resolvedType),
+        $value: `{${aliasPath}}`,
+      };
+    }
+  }
+
+  const resolvedValue = resolveAliasValue(rawValue, modeId, lookups.variableById);
+
+  return {
     $type: mapType(variable.resolvedType),
     $value: formatTokenValue(resolvedValue),
-    $extensions: {
-      "com.figma.variableId": variable.id,
-      "com.figma.scopes": variable.scopes?.length
-        ? variable.scopes
-        : ["ALL_SCOPES"],
-    },
   };
- 
-  if (variable.hiddenFromPublishing !== undefined) {
-    token.$extensions["com.figma.hiddenFromPublishing"] =
-      variable.hiddenFromPublishing;
-  }
- 
-  if (variable.resolvedType === "STRING") {
-    token.$extensions["com.figma.type"] = "string";
-  }
- 
-  const aliasData = createAliasData(
-    rawValue,
-    lookups.variableById,
-    lookups.collectionById
-  );
- 
-  if (aliasData) {
-    token.$extensions["com.figma.aliasData"] = aliasData;
-  }
- 
-  return token;
 }
  
 /* -------------------- Collection Export -------------------- */
@@ -251,34 +205,24 @@ function buildCollectionTokens(collectionName, lookups) {
   const collectionVariables = lookups.variables.filter(
     (variable) => variable.variableCollectionId === collection.id
   );
- 
-  const outputByMode = {};
- 
-  collection.modes.forEach((mode) => {
-    const modeOutput = {};
- 
-    collectionVariables.forEach((variable) => {
-      const rawValue = variable.valuesByMode?.[mode.modeId];
- 
-      if (rawValue === undefined) return;
- 
-      const tokenPath = getVariablePath(variable.name);
- 
-      const token = createToken(variable, rawValue, mode.modeId, lookups);
- 
-      setNestedValue(modeOutput, tokenPath, token);
-    });
- 
-    modeOutput.$extensions = {
-      "com.figma.modeName": mode.name,
-      "com.figma.parentVariableSetId": collection.id,
-      "com.figma.parentVariableSetName": collection.name,
-    };
- 
-    outputByMode[mode.name] = modeOutput;
+
+  // Use the default mode (first mode) only
+  const defaultMode = collection.modes[0];
+  if (!defaultMode) return {};
+
+  const modeOutput = {};
+
+  collectionVariables.forEach((variable) => {
+    const rawValue = variable.valuesByMode?.[defaultMode.modeId];
+
+    if (rawValue === undefined) return;
+
+    const tokenPath = getVariablePath(variable.name);
+    const token = createToken(variable, rawValue, defaultMode.modeId, lookups);
+    setNestedValue(modeOutput, tokenPath, token);
   });
- 
-  return outputByMode;
+
+  return modeOutput;
 }
  
 /* -------------------- Brand Semantic Split -------------------- */
@@ -287,45 +231,14 @@ function cloneDeep(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
  
-function retargetAliasDataToBrand(obj, brandName) {
-  if (!obj || typeof obj !== "object") return;
- 
-  if (obj.$extensions?.["com.figma.aliasData"]) {
-    const aliasData = obj.$extensions["com.figma.aliasData"];
- 
-    if (
-      aliasData.targetVariableName &&
-      aliasData.targetVariableName.startsWith("colors/")
-    ) {
-      const parts = aliasData.targetVariableName.split("/");
- 
-      /**
-       * Example:
-       * colors/ocrevus/primary/300
-       * becomes:
-       * colors/giredrestant/primary/300
-       */
-      parts[1] = brandName;
- 
-      aliasData.targetVariableName = parts.join("/");
-    }
-  }
- 
-  Object.values(obj).forEach((value) => {
-    if (value && typeof value === "object") {
-      retargetAliasDataToBrand(value, brandName);
-    }
-  });
-}
- 
 /* -------------------- Save Files -------------------- */
  
 async function saveFiles(figmaData) {
   await fs.ensureDir(OUTPUT_DIR);
   await fs.emptyDir(OUTPUT_DIR);
- 
+
   const lookups = createLookups(figmaData);
- 
+
   /**
    * 1. global (primitive)
    */
@@ -333,13 +246,13 @@ async function saveFiles(figmaData) {
     COLLECTIONS_TO_EXPORT.GLOBAL,
     lookups
   );
- 
+
   await fs.writeJson(
     path.join(OUTPUT_DIR, "global-primitive.tokens.json"),
-    globalTokens,
+    { $metadata: { tokenSetOrder: ["global"] }, global: globalTokens },
     { spaces: 2 }
   );
- 
+
   /**
    * 2. brand (primitive) (WIP)
    */
@@ -347,59 +260,62 @@ async function saveFiles(figmaData) {
     COLLECTIONS_TO_EXPORT.BRAND_PRIMITIVE,
     lookups
   );
- 
+
   await fs.writeJson(
     path.join(OUTPUT_DIR, "brand-primitive-wip.tokens.json"),
-    brandPrimitiveTokens,
+    { $metadata: { tokenSetOrder: ["brand-primitive"] }, "brand-primitive": brandPrimitiveTokens },
     { spaces: 2 }
   );
- 
+
   /**
-   * 3. brand semantic (WIP)
-   *    - giredrestant
-   *    - ocrevus
+   * 3. brand semantic (WIP) — one file per brand
    */
   const brandSemanticTokens = buildCollectionTokens(
     COLLECTIONS_TO_EXPORT.BRAND_SEMANTIC,
     lookups
   );
- 
+
   const semanticDir = path.join(OUTPUT_DIR, "brand-semantic-wip");
   await fs.ensureDir(semanticDir);
- 
+
   BRAND_NAMES.forEach((brandName) => {
-    const brandSemanticOutput = cloneDeep(brandSemanticTokens);
- 
-    /**
-     * Keeps variable alias data,
-     * but retargets brand primitive aliases per brand.
-     */
-    retargetAliasDataToBrand(brandSemanticOutput, brandName);
- 
+    const setKey = `semantic-${sanitizeFileName(brandName)}`;
     fs.writeJsonSync(
       path.join(semanticDir, `${sanitizeFileName(brandName)}.tokens.json`),
-      brandSemanticOutput,
+      {
+        $metadata: { tokenSetOrder: ["global", "brand-primitive", setKey] },
+        [setKey]: cloneDeep(brandSemanticTokens),
+      },
       { spaces: 2 }
     );
   });
- 
+
   /**
-   * Optional combined file
+   * Combined DTCG file
    */
+  const combined = {
+    $metadata: {
+      tokenSetOrder: [
+        "global",
+        "brand-primitive",
+        ...BRAND_NAMES.map((b) => `semantic-${sanitizeFileName(b)}`),
+      ],
+    },
+    global: globalTokens,
+    "brand-primitive": brandPrimitiveTokens,
+  };
+
+  BRAND_NAMES.forEach((brandName) => {
+    combined[`semantic-${sanitizeFileName(brandName)}`] = cloneDeep(brandSemanticTokens);
+  });
+
   await fs.writeJson(
     path.join(OUTPUT_DIR, "GEN_ALL.tokens.json"),
-    {
-      "global (primitive)": globalTokens,
-      "brand (primitive) (WIP)": brandPrimitiveTokens,
-      "brand semantic (WIP)": {
-        giredrestant: cloneDeep(brandSemanticTokens),
-        ocrevus: cloneDeep(brandSemanticTokens),
-      },
-    },
+    combined,
     { spaces: 2 }
   );
- 
-  console.log("✅ Tokens exported in required brand structure");
+
+  console.log("✅ Tokens exported in DTCG format");
 }
  
 /* -------------------- Main -------------------- */
