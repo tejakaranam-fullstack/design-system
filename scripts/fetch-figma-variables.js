@@ -14,7 +14,7 @@ if (!FIGMA_API_TOKEN || !FIGMA_FILE_ID) {
  
 const headers = {
   "X-Figma-Token": FIGMA_API_TOKEN,
-};
+}; 
  
 const OUTPUT_DIR = "tokens";
  
