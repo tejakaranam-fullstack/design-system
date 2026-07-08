@@ -17,7 +17,7 @@ const headers = {
 }; 
  
 const OUTPUT_DIR = "tokens";
- 
+   
 const COLLECTIONS_TO_EXPORT = {
   GLOBAL: "global (primitive)",
   BRAND_PRIMITIVE: "brand (primitive) (WIP)",

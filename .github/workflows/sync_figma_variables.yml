@@ -32,4 +32,4 @@ jobs:
  
           git add tokens/
           git commit -m "update figma tokens" || echo "No changes"
-          git push
+          git push  
