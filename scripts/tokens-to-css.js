@@ -5,16 +5,33 @@ const fs = require("fs-extra");
 const path = require("path");
 
 const TOKENS_DIR = "tokens";
-const OUTPUT_DIR = "styles/tokens";
+const CSS_DIR = "tokens/css";
+const SCSS_DIR = "tokens/scss";
 
 /* -------------------- Helpers -------------------- */
 
 /**
+ * Strip a leading segment from a dot-separated token path.
+ * e.g. "colors.brand.primary.100" → "brand.primary.100"
+ */
+function stripLeadingSegment(tokenPath, segment) {
+  const prefix = segment + ".";
+  return tokenPath.startsWith(prefix) ? tokenPath.slice(prefix.length) : tokenPath;
+}
+
+/**
  * Convert a dot-separated token path to a CSS/SCSS variable name.
- * e.g. "color.functional.white" → "color-functional-white"
+ * Strips leading "colors" segment.
+ * e.g. "colors.brand.primary.100" → "brand-primary-100"
  */
 function pathToVarName(tokenPath) {
-  return tokenPath.replace(/\./g, "-");
+  const stripped = stripLeadingSegment(tokenPath, "colors");
+  return stripped
+    .replace(/\./g, "-")          // dot separators → hyphen
+    .replace(/\s+/g, "-")         // spaces → hyphen
+    .replace(/[^a-zA-Z0-9-_]/g, "") // remove any other invalid chars
+    .replace(/-+/g, "-")          // collapse consecutive hyphens
+    .replace(/^-|-$/g, "");       // trim leading/trailing hyphens
 }
 
 /**
@@ -99,7 +116,7 @@ function generateSCSS(tokens) {
 
 /* -------------------- Per-set file generation -------------------- */
 
-async function processTokenSet(setKey, setData, outputDir) {
+async function processTokenSet(setKey, setData, cssDir, scssDir) {
   const tokens = collectTokens(setData);
   if (tokens.length === 0) return { css: "", scss: "" };
 
@@ -108,10 +125,10 @@ async function processTokenSet(setKey, setData, outputDir) {
 
   const safeName = setKey.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 
-  await fs.writeFile(path.join(outputDir, `${safeName}.css`), cssContent, "utf8");
-  await fs.writeFile(path.join(outputDir, `${safeName}.scss`), scssContent, "utf8");
+  await fs.writeFile(path.join(cssDir, `${safeName}.css`), cssContent, "utf8");
+  await fs.writeFile(path.join(scssDir, `${safeName}.scss`), scssContent, "utf8");
 
-  console.log(`  ✔ ${safeName}.css / ${safeName}.scss  (${tokens.length} tokens)`);
+  console.log(`  ✔ tokens/css/${safeName}.css / tokens/scss/${safeName}.scss  (${tokens.length} tokens)`);
 
   return { css: cssContent, scss: scssContent };
 }
@@ -127,7 +144,8 @@ async function main() {
   }
 
   const genAll = await fs.readJson(genAllPath);
-  await fs.ensureDir(OUTPUT_DIR);
+  await fs.ensureDir(CSS_DIR);
+  await fs.ensureDir(SCSS_DIR);
 
   const tokenOrder =
     genAll.$metadata?.tokenSetOrder || Object.keys(genAll).filter((k) => k !== "$metadata");
@@ -141,16 +159,16 @@ async function main() {
     const setData = genAll[setKey];
     if (!setData || typeof setData !== "object") continue;
 
-    const { css, scss } = await processTokenSet(setKey, setData, OUTPUT_DIR);
+    const { css, scss } = await processTokenSet(setKey, setData, CSS_DIR, SCSS_DIR);
     if (css) allCSS.push(`/* ---- ${setKey} ---- */\n${css}`);
     if (scss) allSCSS.push(`// ---- ${setKey} ----\n${scss}`);
   }
 
   // Write combined files
-  await fs.writeFile(path.join(OUTPUT_DIR, "tokens.css"), allCSS.join("\n"), "utf8");
-  await fs.writeFile(path.join(OUTPUT_DIR, "tokens.scss"), allSCSS.join("\n"), "utf8");
+  await fs.writeFile(path.join(CSS_DIR, "tokens.css"), allCSS.join("\n"), "utf8");
+  await fs.writeFile(path.join(SCSS_DIR, "tokens.scss"), allSCSS.join("\n"), "utf8");
 
-  console.log(`\n✅ Combined tokens.css / tokens.scss written to ${OUTPUT_DIR}/`);
+  console.log(`\n✅ tokens/css/tokens.css and tokens/scss/tokens.scss written`);
 }
 
 main().catch((err) => {
