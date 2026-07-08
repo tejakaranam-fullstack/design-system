@@ -5,8 +5,8 @@ const fs = require("fs-extra");
 const path = require("path");
 
 const TOKENS_DIR = "tokens";
-const CSS_DIR = "tokens/css";
-const SCSS_DIR = "tokens/scss";
+const CSS_DIR = "styles/tokens/css";
+const SCSS_DIR = "styles/tokens/scss";
 
 /* -------------------- Helpers -------------------- */
 
@@ -145,7 +145,9 @@ async function main() {
 
   const genAll = await fs.readJson(genAllPath);
   await fs.ensureDir(CSS_DIR);
+  await fs.emptyDir(CSS_DIR);
   await fs.ensureDir(SCSS_DIR);
+  await fs.emptyDir(SCSS_DIR);
 
   const tokenOrder =
     genAll.$metadata?.tokenSetOrder || Object.keys(genAll).filter((k) => k !== "$metadata");
