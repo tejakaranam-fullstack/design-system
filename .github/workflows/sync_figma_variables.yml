@@ -25,11 +25,13 @@ jobs:
         env:
           FIGMA_API_TOKEN: ${{ secrets.FIGMA_API_TOKEN }}
           FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+
+      - run: node scripts/tokens-to-css.js
  
       - run: |
           git config user.name "figma-bot"
           git config user.email "figma-bot@users.noreply.github.com"
  
-          git add tokens/
+          git add tokens/ styles/
           git commit -m "update figma tokens" || echo "No changes"
           git push  
