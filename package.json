@@ -1,6 +1,7 @@
 {
   "name": "design-system",
   "version": "1.0.0",
+  "type": "module",
   "description": "Design system token pipeline: Figma → DTCG → Style Dictionary",
   "scripts": {
     "fetch": "node scripts/fetch-figma.js",

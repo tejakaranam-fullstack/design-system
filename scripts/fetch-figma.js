@@ -39,6 +39,17 @@ async function fetchFigmaVariables() {
   if (!response.ok) {
     const body = await response.text();
     console.error(`Figma API error ${response.status}: ${body}`);
+    if (response.status === 404) {
+      console.error(
+        '\nTroubleshooting:\n' +
+        '  1. Verify FIGMA_FILE_KEY matches the key in your Figma file URL:\n' +
+        '     figma.com/design/<FILE_KEY>/...\n' +
+        '  2. The Variables REST API (/variables/local) requires a Figma paid plan\n' +
+        '     (Professional or above). If you are on the Starter plan, this endpoint\n' +
+        '     returns 404 regardless of the file key.\n' +
+        '  3. Ensure your FIGMA_TOKEN has file:read scope and can access this file.'
+      );
+    }
     process.exit(1);
   }
 
