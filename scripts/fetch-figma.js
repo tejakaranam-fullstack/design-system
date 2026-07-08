@@ -49,6 +49,15 @@ async function fetchFigmaVariables() {
         '     returns 404 regardless of the file key.\n' +
         '  3. Ensure your FIGMA_TOKEN has file:read scope and can access this file.'
       );
+
+      const outputPath = path.resolve(__dirname, '../tokens/figma-raw.json');
+      if (fs.existsSync(outputPath)) {
+        console.warn(
+          '\nFalling back to the existing cached file at tokens/figma-raw.json.\n' +
+          'No changes will be written; downstream steps will use the cached data.'
+        );
+        return;
+      }
     }
     process.exit(1);
   }

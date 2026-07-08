@@ -1,0 +1,60 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --ds-color-brand-primary: #0066ff; /** Primary brand color */
+  --ds-color-brand-secondary: #00c9a7; /** Secondary brand color */
+  --ds-color-neutral-0: #ffffff;
+  --ds-color-neutral-100: #f5f5f5;
+  --ds-color-neutral-200: #e5e5e5;
+  --ds-color-neutral-300: #d4d4d4;
+  --ds-color-neutral-400: #a3a3a3;
+  --ds-color-neutral-500: #737373;
+  --ds-color-neutral-600: #525252;
+  --ds-color-neutral-700: #404040;
+  --ds-color-neutral-800: #262626;
+  --ds-color-neutral-900: #171717;
+  --ds-color-neutral-1000: #000000;
+  --ds-color-semantic-background-default: #ffffff;
+  --ds-color-semantic-background-subtle: #f5f5f5;
+  --ds-color-semantic-text-default: #171717;
+  --ds-color-semantic-text-muted: #737373;
+  --ds-spacing-0: 0;
+  --ds-spacing-1: 4;
+  --ds-spacing-2: 8;
+  --ds-spacing-3: 12;
+  --ds-spacing-4: 16;
+  --ds-spacing-5: 20;
+  --ds-spacing-6: 24;
+  --ds-spacing-8: 32;
+  --ds-spacing-10: 40;
+  --ds-spacing-12: 48;
+  --ds-spacing-16: 64;
+  --ds-typography-font-family-sans: Inter, system-ui, sans-serif;
+  --ds-typography-font-family-mono: JetBrains Mono, monospace;
+  --ds-typography-font-size-xs: 12;
+  --ds-typography-font-size-sm: 14;
+  --ds-typography-font-size-md: 16;
+  --ds-typography-font-size-lg: 18;
+  --ds-typography-font-size-xl: 20;
+  --ds-typography-font-size-2xl: 24;
+  --ds-typography-font-size-3xl: 30;
+  --ds-typography-font-size-4xl: 36;
+  --ds-typography-font-weight-regular: 400;
+  --ds-typography-font-weight-medium: 500;
+  --ds-typography-font-weight-semibold: 600;
+  --ds-typography-font-weight-bold: 700;
+  --ds-typography-line-height-tight: 1.25;
+  --ds-typography-line-height-normal: 1.5;
+  --ds-typography-line-height-relaxed: 1.75;
+  --ds-border-radius-none: 0;
+  --ds-border-radius-sm: 2;
+  --ds-border-radius-md: 4;
+  --ds-border-radius-lg: 8;
+  --ds-border-radius-xl: 12;
+  --ds-border-radius-full: 9999;
+  --ds-shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+  --ds-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --ds-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+}
