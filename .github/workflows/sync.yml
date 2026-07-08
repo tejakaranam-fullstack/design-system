@@ -33,14 +33,17 @@ jobs:
           FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
           FIGMA_FILE_KEY: ${{ secrets.FIGMA_FILE_KEY }}
 
+      - name: Build Tokens
+        run: node scripts/build-tokens.js
+
       - name: Commit Changes
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
 
-          git add .
+          git add --force tokens/figma-variables.json build/tokens.css
 
           git diff --cached --quiet || (
-            git commit -m "Update Figma variables"
+            git commit -m "chore: sync Figma variables and rebuild tokens"
             git push
           )
