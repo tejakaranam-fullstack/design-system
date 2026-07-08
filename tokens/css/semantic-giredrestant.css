@@ -1,0 +1,30 @@
+:root {
+  --typography-font-display: var(--typography-font-family-headings-brutalist);
+  --typography-font-heading: var(--typography-font-family-headings-industrial);
+  --typography-font-body: var(--typography-font-family-body-body);
+  --typography-weight-display: var(--typography-weight-regular);
+  --typography-weight-heading: var(--typography-weight-bold);
+  --typography-weight-body: var(--typography-weight-regular);
+  --surface-bg-primary-darker: var(--ocrevus-primary-500);
+  --surface-bg-primary-dark: var(--ocrevus-primary-400);
+  --surface-bg-primary: var(--ocrevus-primary-300);
+  --surface-bg-primary-light: var(--ocrevus-primary-200);
+  --surface-bg-primary-lighter: var(--ocrevus-primary-100);
+  --surface-bg-accent: var(--ocrevus-accent-base);
+  --surface-storke-primary-darker: var(--ocrevus-primary-500);
+  --surface-storke-primary-dark: var(--ocrevus-primary-400);
+  --surface-storke-primary: var(--ocrevus-primary-300);
+  --surface-storke-primary-light: var(--ocrevus-primary-200);
+  --surface-storke-primary-lighter: var(--ocrevus-primary-100);
+  --surface-storke-accent: var(--ocrevus-accent-base);
+  --color-display-light: var(--color-functional-white);
+  --color-display-dark: var(--ocrevus-primary-300);
+  --color-heading-light: var(--color-functional-white);
+  --color-heading-dark: var(--ocrevus-primary-300);
+  --color-body-light: var(--color-functional-white);
+  --color-body-dark: var(--color-neutral-900);
+  --color-button-text-dark: var(--color-neutral-900);
+  --color-button-text-light: var(--color-neutral-900);
+  --color-link-cta-dark: var(--color-functional-white);
+  --color-link-cta-light: var(--color-neutral-900);
+}
