@@ -1,49 +1,62 @@
-name: Sync Figma Variables
+name: Sync Figma Tokens
 
 on:
+  # Run on a schedule (every day at 06:00 UTC)
+  schedule:
+    - cron: '0 6 * * *'
+
+  # Allow manual trigger from the GitHub Actions UI
   workflow_dispatch:
 
-  schedule:
-    - cron: "0 0 * * *"
+  # Optionally trigger on pushes to main (remove if not needed)
+  # push:
+  #   branches: [main]
 
 jobs:
   sync:
-
+    name: Fetch → Transform → Build → Commit
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: write   # Required to push the updated tokens back
 
     steps:
-
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          persist-credentials: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: '20'
+          cache: 'npm'
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Sync Variables
-        run: node scripts/sync-figma.js
+      - name: Fetch Figma variables
         env:
           FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
-          FIGMA_FILE_KEY: ${{ secrets.FIGMA_FILE_KEY }}
+          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+        run: npm run fetch
 
-      - name: Build Tokens
-        run: node scripts/build-tokens.js
+      - name: Transform to DTCG format
+        run: npm run transform
 
-      - name: Commit Changes
+      - name: Build token outputs
+        run: npm run build
+
+      - name: Check for changes
+        id: diff
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+          git diff --quiet tokens/ build/ || echo "changed=true" >> "$GITHUB_OUTPUT"
 
-          git add --force tokens/figma-variables.json build/tokens.css
-
-          git diff --cached --quiet || (
-            git commit -m "chore: sync Figma variables and rebuild tokens"
-            git push
-          )
+      - name: Commit and push updated tokens
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tokens/ build/
+          git commit -m "chore: sync design tokens from Figma [skip ci]"
+          git push

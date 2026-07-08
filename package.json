@@ -1,18 +1,26 @@
 {
   "name": "design-system",
   "version": "1.0.0",
-  "description": "",
-  "type": "module",
-  "main": "index.js",
+  "description": "Design system token pipeline: Figma → DTCG → Style Dictionary",
   "scripts": {
-    "build": "node scripts/build-tokens.js",
-    "sync": "node scripts/sync-figma.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "fetch": "node scripts/fetch-figma.js",
+    "transform": "node scripts/figma-to-dtcg.js",
+    "build": "node scripts/build.js",
+    "sync": "npm run fetch && npm run transform && npm run build"
   },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "dotenv": "^17.4.2",
+    "style-dictionary": "^4.4.0"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "style-dictionary.config.js",
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "style-dictionary": "^4.4.0"
-  }
+  "license": "ISC"
 }
