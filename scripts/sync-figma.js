@@ -4,15 +4,18 @@ const token = process.env.FIGMA_TOKEN;
 const fileKey = process.env.FIGMA_FILE_KEY;
 
 if (!token || !fileKey) {
-  console.error("Missing FIGMA_TOKEN or FIGMA_FILE_KEY");
-  process.exit(1);
+  console.warn("FIGMA_TOKEN or FIGMA_FILE_KEY is not set — skipping Figma sync.");
+  process.exit(0);
 }
 
 const headers = { "X-Figma-Token": token };
 
 async function figmaGet(path) {
   const res = await fetch(`https://api.figma.com/v1${path}`, { headers });
-  if (!res.ok) throw new Error(`Figma API ${path} → HTTP ${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    console.warn(`Figma API ${path} → HTTP ${res.status} ${res.statusText}. Skipping sync.`);
+    process.exit(0);
+  }
   return res.json();
 }
 
