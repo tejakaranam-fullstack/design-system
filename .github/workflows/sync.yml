@@ -29,11 +29,25 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate secrets
+        run: |
+          if [ -z "$FIGMA_TOKEN" ]; then
+            echo "::error::Repository secret FIGMA_TOKEN is not set."
+            exit 1
+          fi
+          if [ -z "$FIGMA_FILE_ID" ]; then
+            echo "::error::Repository secret FIGMA_FILE_ID is not set."
+            exit 1
+          fi
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
 
       - name: Fetch Figma variables
         env:
