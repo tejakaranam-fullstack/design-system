@@ -1,10 +1,14 @@
 /**
  * fetch-figma.js
- * Fetches design tokens from the Figma Variables API and writes raw output to tokens/figma-raw.json.
+ * Fetches design tokens from Figma and writes raw output to tokens/figma-raw.json.
+ *
+ * Strategy:
+ *   1. Try the Variables API  (/v1/files/:key/variables/local) — requires a paid Figma plan.
+ *   2. If that returns 404, fall back to the Styles + Nodes API — works on all plans (free & paid).
  *
  * Required environment variables:
- *   FIGMA_TOKEN   – Personal access token or OAuth token with file:read scope
- *   FIGMA_FILE_KEY – The Figma file key (from the file URL: figma.com/design/<FILE_ID>/…)
+ *   FIGMA_TOKEN    – Personal access token with file:read scope
+ *   FIGMA_FILE_KEY – The file key from the Figma URL: figma.com/design/<FILE_KEY>/…
  */
 
 import fs from 'fs';
@@ -25,44 +29,86 @@ if (!FIGMA_FILE_KEY) {
   process.exit(1);
 }
 
-async function fetchFigmaVariables() {
-  const url = `https://api.figma.com/v1/files/${FIGMA_FILE_KEY}/variables/local`;
+const BASE = 'https://api.figma.com/v1';
+const HEADERS = { 'X-Figma-Token': FIGMA_TOKEN };
 
-  console.log(`Fetching variables from Figma file: ${FIGMA_FILE_KEY}`);
+async function get(url) {
+  const res = await fetch(url, { headers: HEADERS });
+  return { status: res.status, body: await res.json() };
+}
 
-  const response = await fetch(url, {
-    headers: {
-      'X-Figma-Token': FIGMA_TOKEN,
-    },
-  });
+// ─── Strategy 1: Variables API (paid plans) ───────────────────────────────────
+async function fetchViaVariablesAPI() {
+  console.log('Trying Variables API (requires paid Figma plan)…');
+  const { status, body } = await get(`${BASE}/files/${FIGMA_FILE_KEY}/variables/local`);
 
-  if (!response.ok) {
-    const body = await response.text();
-    console.error(`Figma API error ${response.status}: ${body}`);
-    if (response.status === 404) {
-      console.error(
-        '\nTroubleshooting:\n' +
-        '  1. Verify FIGMA_FILE_KEY matches the key in your Figma file URL:\n' +
-        '     figma.com/design/<FILE_KEY>/...\n' +
-        '  2. The Variables REST API (/variables/local) requires a Figma paid plan\n' +
-        '     (Professional or above). If you are on the Starter plan, this endpoint\n' +
-        '     returns 404 regardless of the file key.\n' +
-        '  3. Ensure your FIGMA_TOKEN has file:read scope and can access this file.'
-      );
-    }
+  if (status === 404) {
+    console.log('Variables API returned 404 — falling back to Styles API.');
+    return null;
+  }
+  if (status !== 200) {
+    console.error(`Variables API error ${status}: ${JSON.stringify(body)}`);
     process.exit(1);
   }
 
-  const data = await response.json();
+  console.log('Variables API succeeded.');
+  return { source: 'variables', ...body };
+}
+
+// ─── Strategy 2: Styles + Nodes API (all plans, including free) ───────────────
+async function fetchViaStylesAPI() {
+  console.log('Using Styles API (works on all Figma plans)…');
+
+  const { status: sStatus, body: sBody } = await get(`${BASE}/files/${FIGMA_FILE_KEY}/styles`);
+  if (sStatus !== 200) {
+    console.error(`Styles API error ${sStatus}: ${JSON.stringify(sBody)}`);
+    process.exit(1);
+  }
+
+  const styles = sBody.meta?.styles ?? [];
+  console.log(`Found ${styles.length} styles.`);
+
+  if (styles.length === 0) {
+    console.warn('No styles found. Make sure the file has published local styles.');
+    return { source: 'styles', styles: [], nodes: {} };
+  }
+
+  // Fetch node details in batches of 50
+  const nodeIds = styles.map((s) => s.node_id);
+  const BATCH = 50;
+  const nodeDetails = {};
+
+  for (let i = 0; i < nodeIds.length; i += BATCH) {
+    const batch = nodeIds.slice(i, i + BATCH).join(',');
+    const { status: nStatus, body: nBody } = await get(
+      `${BASE}/files/${FIGMA_FILE_KEY}/nodes?ids=${encodeURIComponent(batch)}`
+    );
+    if (nStatus !== 200) {
+      console.error(`Nodes API error ${nStatus}: ${JSON.stringify(nBody)}`);
+      process.exit(1);
+    }
+    Object.assign(nodeDetails, nBody.nodes ?? {});
+  }
+
+  console.log(`Fetched node details for ${Object.keys(nodeDetails).length} nodes.`);
+  return { source: 'styles', styles, nodes: nodeDetails };
+}
+
+// ─── Main ──────────────────────────────────────────────────────────────────────
+async function main() {
+  let data = await fetchViaVariablesAPI();
+  if (!data) {
+    data = await fetchViaStylesAPI();
+  }
 
   const outputPath = path.resolve(__dirname, '../tokens/figma-raw.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), 'utf-8');
 
-  console.log(`Raw Figma variables written to ${outputPath}`);
+  console.log(`Raw Figma data written to ${outputPath} (source: ${data.source})`);
 }
 
-fetchFigmaVariables().catch((err) => {
+main().catch((err) => {
   console.error('Unexpected error:', err);
   process.exit(1);
 });
